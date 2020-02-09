@@ -505,7 +505,7 @@ int traceToTile (const Ray& ray)
 
 void mainloop(void)
 {
-	SDL_ShowCursor(0);
+	SDL_ShowCursor(1);
 	bool running = true;
 	Camera& cam = *scene.camera;
 	const double MOVEMENT_PER_SEC = 20;

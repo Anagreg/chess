@@ -39,9 +39,10 @@ Color ConstantShader::shade(const Ray& ray, const IntersectionInfo& info)
 
 Color CheckerTexture::sample(const Ray& ray, const IntersectionInfo& info)
 {
-	int integerX = int(floor(info.u * scaling) / 5.0); // 5.5 -> 5
-	int integerY = int(floor(info.v * scaling) / 5.0); // -3.2 -> -4
-	
+	int integerX = int(floor(info.u * scaling / 5.0)); // 5.5 -> 5
+	int integerY = int(floor(info.v * scaling / 5.0)); // -3.2 -> -4
+	//if (info.u < 4.0 && info.u >= 2.0 && info.v >= 2.0 && info.v < 4.0)
+    //    printf("u: %lf v: %lf; x: %d, y: %d; color: %d\n", info.u, info.v, integerX, integerY, (((integerX + integerY) % 2 == 0) ? 1 : 2));
 	return ((integerX + integerY) % 2 == 0) ? color1 : color2;
 }
 
@@ -50,12 +51,12 @@ Color Lambert::shade(const Ray& ray, const IntersectionInfo& info)
 	Color diffuseColor = color;
 	if (diffuseTex) diffuseColor *= diffuseTex->sample(ray, info);
 	Color shadeResult = diffuseColor * scene.settings.ambientLight;
-	
+
 	for (auto light: scene.lights) {
 		int numLightSamples = 0;
 		Color sum(0, 0, 0);
 		numLightSamples = light->getNumSamples();
-		
+
 		for (int sampleIdx = 0; sampleIdx < numLightSamples; sampleIdx++) {
 			Color lightColor;
 			Vector lightPos;
@@ -63,14 +64,14 @@ Color Lambert::shade(const Ray& ray, const IntersectionInfo& info)
 			double lightDistSqr = (info.ip - lightPos).lengthSqr();
 			Vector toLight = (lightPos - info.ip);
 			toLight.normalize();
-			
+
 			Vector n = faceforward(ray.dir, info.norm);
-			
+
 			float cosAngle = dot(toLight, n);
 			float lambertTerm = cosAngle / lightDistSqr;
-			
+
 			lambertTerm = max(0.0f, lambertTerm);
-			
+
 			if (visible(info.ip + n * 1e-6, lightPos))
 				sum += diffuseColor * lightColor * lambertTerm;
 		}
@@ -89,7 +90,7 @@ void Lambert::spawnRay(const IntersectionInfo& x, const Ray& w_in, Ray& w_out, C
 {
 	w_out = w_in;
 	w_out.depth++;
-	
+
 	w_out.start = x.ip + x.norm * 1e-6;
 	w_out.dir = hemisphereSample(x);
 	w_out.flags |= RF_DIFFUSE;
@@ -104,11 +105,11 @@ Color Phong::shade(const Ray& ray, const IntersectionInfo& info)
 	if (diffuseTex) diffuseColor *= diffuseTex->sample(ray, info);
 	Color shadeResult = diffuseColor * scene.settings.ambientLight;
 
-	for (auto light: scene.lights) {	
+	for (auto light: scene.lights) {
 		int numLightSamples = 0;
 		Color sum(0, 0, 0);
 		numLightSamples = light->getNumSamples();
-		
+
 		for (int sampleIdx = 0; sampleIdx < numLightSamples; sampleIdx++) {
 			Color lightColor;
 			Vector lightPos;
@@ -116,17 +117,17 @@ Color Phong::shade(const Ray& ray, const IntersectionInfo& info)
 			double lightDistSqr = (info.ip - lightPos).lengthSqr();
 			Vector toLight = (lightPos - info.ip);
 			toLight.normalize();
-			
+
 			Vector n = faceforward(ray.dir, info.norm);
-			
+
 			float cosAngle = dot(toLight, n);
 			float lambertTerm = cosAngle / lightDistSqr;
-			
+
 			lambertTerm = max(0.0f, lambertTerm);
-			
+
 			if (visible(info.ip + n * 1e-6, lightPos)) {
 				Color result = diffuseColor * lightColor * lambertTerm;
-				
+
 				Vector fromLight = -toLight;
 				Vector r = reflect(fromLight, n);
 				double cosCameraReflection = dot(-ray.dir, r);
@@ -148,30 +149,30 @@ Color BitmapTexture::sample(const Ray& ray, const IntersectionInfo& info)
 {
 	int int_x = int(floor(info.u * scaling * bmp.getWidth()));
 	int int_y = int(floor(info.v * scaling * bmp.getHeight()));
-	
+
 	int_x %= bmp.getWidth();
 	int_y %= bmp.getHeight();
 	if (int_x < 0) int_x += bmp.getWidth();
 	if (int_y < 0) int_y += bmp.getHeight();
-	
+
 	return bmp.getPixel(int_x, int_y);
 }
 
 Color Reflection::shade(const Ray& ray, const IntersectionInfo& info)
 {
 	Vector n = faceforward(ray.dir, info.norm);
-	
-	if (pureReflection) {	
+
+	if (pureReflection) {
 		Ray newRay = ray;
 		newRay.start = info.ip + n * 1e-6;
 		newRay.dir = reflect(ray.dir, n);
 		newRay.depth = ray.depth + 1;
-		
+
 		return raytrace(newRay) * mult;
 	} else {
 		Vector b, c;
 		orthonormalSystem(n, b, c);
-		
+
 		Color sum(0, 0, 0);
 		int numSamplesActual = ray.depth == 0 ? numSamples : LOW_GLOSSY_SAMPLES;
 		Random& rnd = getRandomGen();
@@ -180,26 +181,26 @@ Color Reflection::shade(const Ray& ray, const IntersectionInfo& info)
 			Vector reflected;
 			while (1) {
 				rnd.unitDiscSample(x, y);
-				
+
 				x *= deflectionScaling;
 				y *= deflectionScaling;
-				
+
 				Vector newNormal = n + b * x + c * y;
 				newNormal.normalize();
-				
+
 				reflected = reflect(ray.dir, newNormal);
-				
+
 				if (dot(reflected, n) > 0) break;
 			}
-			
+
 			Ray newRay = ray;
 			newRay.start = info.ip + n * 1e-6;
 			newRay.dir = reflected;
 			newRay.depth = ray.depth + 1;
-			
+
 			sum += raytrace(newRay) * mult;
 		}
-		
+
 		return sum / numSamplesActual;
 	}
 }
@@ -208,7 +209,7 @@ Color Reflection::eval(const IntersectionInfo& x, const Vector& w_in, const Vect
 {
 	// if (w_out == reflect(w_in, x.norm)) then return INFINITY;
 	// else 0;
-	
+
 	return Color(0, 0, 0);
 }
 
@@ -238,8 +239,8 @@ inline float fresnel(const Vector& i, const Vector& n, float ior)
 Color Refraction::shade(const Ray& ray, const IntersectionInfo& info)
 {
 	Vector n = faceforward(ray.dir, info.norm);
-	
-	
+
+
 	double myIor;
 	if (dot(n, info.norm) > 0) {
 		// n == info.norm
@@ -250,7 +251,7 @@ Color Refraction::shade(const Ray& ray, const IntersectionInfo& info)
 	}
 
 	Vector refracted = refract(ray.dir, n, myIor);
-	
+
 	if (!refracted.isZero()) {
 		Ray newRay = ray;
 		newRay.start = info.ip - n * 1e-6;
@@ -259,7 +260,7 @@ Color Refraction::shade(const Ray& ray, const IntersectionInfo& info)
 		return raytrace(newRay) * mult;
 	} else {
 		return Color(0, 0, 0); // total infernal refraction
-	}	
+	}
 }
 
 Color Refraction::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
@@ -270,8 +271,8 @@ Color Refraction::eval(const IntersectionInfo& x, const Vector& w_in, const Vect
 void Refraction::spawnRay(const IntersectionInfo& x, const Ray& w_in, Ray& w_out, Color& brdfColor, float& pdf)
 {
 	Vector n = faceforward(w_in.dir, x.norm);
-	
-	
+
+
 	double myIor;
 	if (dot(n, x.norm) > 0) {
 		// n == x.norm
@@ -282,7 +283,7 @@ void Refraction::spawnRay(const IntersectionInfo& x, const Ray& w_in, Ray& w_out
 	}
 
 	Vector refracted = refract(w_in.dir, n, myIor);
-	
+
 	if (!refracted.isZero()) {
 		w_out = w_in;
 		w_out.start = x.ip - n * 1e-6;
@@ -295,7 +296,7 @@ void Refraction::spawnRay(const IntersectionInfo& x, const Ray& w_in, Ray& w_out
 	} else {
 		brdfColor.makeZero();
 		pdf = 1.0;
-	}	
+	}
 }
 
 
@@ -359,10 +360,10 @@ Color Layered::shade(const Ray& ray, const IntersectionInfo& info)
 	Color result(0, 0, 0);
 	for (int i = 0; i < numLayers; i++) {
 		Color opacity = (layers[i].texture ? layers[i].texture->sample(ray, info) : layers[i].opacity);
-		result = layers[i].shader->shade(ray, info) * opacity + 
+		result = layers[i].shader->shade(ray, info) * opacity +
 		         (Color(1, 1, 1) - opacity) * result;
 	}
-	
+
 	return result;
 }
 
@@ -370,7 +371,7 @@ Color FresnelTexture::sample(const Ray& ray, const IntersectionInfo& info)
 {
 	Vector n;
 	double myIor;
-	
+
 	if (dot(ray.dir, info.norm) < 0) {
 		n = info.norm;
 		myIor = ior;
@@ -378,9 +379,9 @@ Color FresnelTexture::sample(const Ray& ray, const IntersectionInfo& info)
 		n = -info.norm;
 		myIor = 1.0 / ior;
 	}
-		
+
 	float f = fresnel(ray.dir, n, myIor);
-	
+
 	return Color(f, f, f);
 }
 
@@ -398,12 +399,12 @@ void BumpTexture::getDeflection(const IntersectionInfo& info, float& dx, float& 
 {
 	int int_x = int(floor(info.u * scaling * bumpTex.getWidth()));
 	int int_y = int(floor(info.v * scaling * bumpTex.getHeight()));
-	
+
 	int_x %= bumpTex.getWidth();
 	int_y %= bumpTex.getHeight();
 	if (int_x < 0) int_x += bumpTex.getWidth();
 	if (int_y < 0) int_y += bumpTex.getHeight();
-	
+
 	Color t = bumpTex.getPixel(int_x, int_y);
 	dx = t.r * bumpIntensity;
 	dy = t.g * bumpIntensity;

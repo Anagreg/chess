@@ -1,8 +1,13 @@
-# fray
-"The Fifth (Render) Element" (educational raytracer)
+# Chess Game
+Based on the "The Fifth (Render) Element" (educational raytracer)
 
-This is the code for the v5 FMI raytracing course.
+This is a group course project using the code for the v5 FMI raytracing course.
 The course site is [http://raytracing-bg.net/](http://raytracing-bg.net/)
+
+#### Raytracing logic - Antonia  
+#### Game logic - https://github.com/jk-007  
+#### Modeling 3D figures(Blender) - https://github.com/Anagreg  
+
 
 How to set it up on your machine
 --------------------------------

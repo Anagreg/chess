@@ -21,7 +21,7 @@
 /**
  * @File vector.h
  * @Brief defines the Vector class (a 3D vector with the usual algebraic operations)
- */ 
+ */
 #pragma once
 
 #include <math.h>
@@ -32,7 +32,7 @@ struct Vector {
 		struct { double x, y, z; };
 		double v[3];
 	};
-	
+
 	Vector () {}
 	Vector(double _x, double _y, double _z) { set(_x, _y, _z); }
 	void set(double _x, double _y, double _z)
@@ -73,6 +73,13 @@ struct Vector {
 		y += rhs.y;
 		z += rhs.z;
 		return *this;
+	}
+	Vector& operator = (const Vector& rhs)
+	{
+	    x = rhs.x;
+	    y = rhs.y;
+	    z = rhs.z;
+	    return *this;
 	}
 	void operator /= (double divider)
 	{
@@ -200,12 +207,12 @@ inline void orthonormalSystem(const Vector& a, Vector& b, Vector& c)
 		{ 1, 0, 0 },
 		{ 0, 1, 0 },
 	};
-	
+
 	Vector testVector = TEST_VECTORS[0];
-	
-	if (fabs(dot(testVector, a)) > 0.9) 
+
+	if (fabs(dot(testVector, a)) > 0.9)
 		testVector = TEST_VECTORS[1];
-	
+
 	b = a ^ testVector;
 	b.normalize();
 	c = a ^ b;
@@ -214,7 +221,7 @@ inline void orthonormalSystem(const Vector& a, Vector& b, Vector& c)
 
 enum {
 	RF_DEBUG = 1,
-	
+
 	RF_DIFFUSE = 2,
 };
 
@@ -224,7 +231,7 @@ struct Ray {
 	Vector dir; // unit vector!
 	int depth = 0;
 	unsigned flags = 0;
-	
+
 	Ray() {}
 	Ray(const Vector& start, const Vector& dir): start(start), dir(dir) {}
 };

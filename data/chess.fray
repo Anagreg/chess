@@ -1,0 +1,485 @@
+//
+
+// 1. First, some global settings
+GlobalSettings {
+	frameWidth          640
+	frameHeight         480
+	ambientLight        (0.28, 0.30, 0.35)
+	maxTraceDepth		5
+	wantAA				off
+	saturation          0.1
+	numThreads		    0
+	interactive		    on
+	fullscreen          off
+}
+
+PointLight {
+	pos            (160, 80, 130)
+	color          (1, 1, 1)
+	power           20000
+}
+
+PointLight {
+	pos            (-20, 80, 130)
+	color          (1, 1, 1)
+	power           20000
+}
+
+// 2. A camera
+// (to enable the spherical lens camera (which introduces heavy spherical abberation)), replace "Camera" with "SphericalLensCamera"
+
+Camera camera {
+	position      (130, 55, 18)
+	yaw           30
+	pitch        -40
+	//roll          0.0
+	//position      (120, 55, 120)
+	//yaw           150
+	//pitch        -70
+	roll          0.0
+	fov           90
+	aspectRatio   1.333
+	//stereoSeparation 0.25 // comment this out to disable the stereoscopic effect
+	dof		off
+	numSamples 100
+	fNumber 5.6
+	autofocus off
+	focalPlaneDist 21.48
+}
+
+Cube board {
+}
+
+CheckerTexture playGroundChecker {
+	//color1 (0.933, 0.627, 0.447)
+	color1 (0.654, 0.372, 0.207)
+	color2 (0.192, 0.035, 0.027)
+	scaling 	0.625
+}
+
+BitmapTexture mahoganyTexture {
+	file "texture/mahogany.bmp"
+}
+
+Phong mahoganyLambert {
+	texture mahoganyTexture
+	specularExponent 200
+}
+
+
+Phong checkerPGLambert {
+	texture playGroundChecker
+	specularExponent 200
+}
+
+
+Layered boardLayered {
+	layer reflection (0.05, 0.07, 0.09)
+	layer mahoganyLambert (1, 1, 1)
+}
+
+Plane plane {
+	y	0
+	limit 32
+}
+
+Layered layaredGP {
+	layer reflection (0.09, 0.11, 0.13)
+	layer checkerPGLambert (0.6, 0.6, 0.6)
+}
+
+// Node 0
+Node boardNode {
+	geometry  board
+	shader    boardLayered
+	scale (34, 2.5, 34)
+	translate (100, 10, 75)
+}
+
+// Node 1
+Node talbeNode {
+	geometry  board
+	shader    blackish
+	scale (65, 5, 45)
+	translate (100, 5, 75)
+}
+
+// Node 2
+Node playGroundNode {
+	geometry  plane
+	shader    layaredGP
+	translate (100, 12.5001, 75)
+}
+
+
+Phong blackish {
+	color (0.05, 0, 0.01)
+	specularExponent 200
+}
+
+Mesh pawn {
+	file "geom/pawn.obj"
+	faceted true
+}
+
+Refl glossyReflection {
+	multiplier 0.94
+}
+
+Lambert black {
+	color (0, 0, 0)
+}
+
+Layered blackGlass {
+	//layer black	 (1, 1, 1)
+	layer refraction (0.4, 0.4, 0.4)
+	layer reflection (1, 1, 1) fresnel
+}
+
+//dark pawns
+Layered darkFigure {
+	layer reflection (0.7, 0.6, 0.6)
+	layer blackish (0.88, 0.88, 0.88)
+}
+
+// Node 3
+Node blackPawnNode1 {
+	geometry  pawn
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (128, 12.5001, 95)
+}
+
+// Node 4
+Node blackPawnNode2 {
+	geometry  pawn
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (120, 12.5001, 95)
+}
+
+// Node 5
+Node blackPawnNode3 {
+	geometry  pawn
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (112.4, 12.5001, 95)
+}
+
+// Node 6
+Node blackPawnNode4 {
+	geometry  pawn
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (104, 12.5001, 95)
+}
+
+// Node 7
+Node blackPawnNode5 {
+	geometry  pawn
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (96, 12.5001, 95)
+}
+
+// Node 8
+Node blackPawnNode6 {
+	geometry  pawn
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (88, 12.5001, 95)
+}
+
+// Node 9
+Node blackPawnNode7 {
+	geometry  pawn
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (80, 12.5001, 95)
+}
+
+// Node 10
+Node blackPawnNode8 {
+	geometry  pawn
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (72, 12.5001, 95)
+}
+
+Mesh rook {
+	file "geom/rook.obj"
+	faceted true
+}
+
+// Node 11
+Node blackRook1 {
+	geometry  rook
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (128, 12.5001, 103)
+}
+
+// Node 12
+Node blackRook2 {
+	geometry  rook
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (72, 12.5001, 103)
+}
+
+//dark bishops
+Mesh bishop {
+	file "geom/bishop.obj"
+}
+
+// Node 13
+Node blackBishop1 {
+	geometry  bishop
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (112, 12.5001, 103)
+}
+
+// Node 14
+Node blackBishop2 {
+	geometry  bishop
+	shader    darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (88, 12.5001, 103)
+}
+
+//dark queen
+
+Mesh queen {
+	file "geom/queen.obj"
+}
+
+// Node 15
+Node darkQueen {
+	geometry queen
+	shader darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (96, 12.5001, 103)
+}
+
+//dark king
+
+Mesh king {
+	file "geom/king.obj"
+}
+
+// Node 16
+Node darkKing {
+	geometry king
+	shader darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (104, 12.5001, 103)
+}
+
+// dark knight
+Mesh knight {
+	file "geom/knight.obj"
+}
+
+// Node 17
+Node darkKnight1 {
+	geometry knight
+	shader darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (120, 12.5001, 103)
+	rotate (-90, 0, 0)
+}
+
+// Node 18
+Node darkKnight2 {
+	geometry knight
+	shader darkFigure
+	scale (5.2, 5.2, 5.2)
+	translate (80, 12.5001, 103)
+	rotate (-90, 0, 0)
+}
+
+
+//light pawns 
+
+Lambert whitish {
+	color (0.956, 0.654, 0.4)
+}
+
+Layered lightFigure {
+	layer reflection (0.7, 0.5, 0.5)
+	layer whitish (0.88, 0.88, 0.88)
+}
+
+Refr refraction {
+	ior 1.5
+	multiplier 0.96
+}
+
+Fresnel fresnel {
+	ior 1.5
+}
+
+Lambert blue {
+	color (0.235, 0.329, 0.623)
+}
+
+Layered glass {
+	layer refraction (1, 1, 1)
+	layer reflection (1, 1, 1) fresnel
+}
+
+// Node 19
+Node lightPawnNode1 {
+	geometry  pawn
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (128, 12.5001, 54.7)
+}
+
+// Node 20
+Node lightPawnNode2 {
+	geometry  pawn
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (120, 12.5001, 55)
+}
+
+// Node 21
+Node lightPawnNode3 {
+	geometry  pawn
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (112, 12.5001, 55)
+}
+
+// Node 22
+Node lightPawnNode4 {
+	geometry  pawn
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (104, 12.5001, 55)
+}
+
+// Node 23
+Node lightPawnNode5 {
+	geometry  pawn
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (96, 12.5001, 55)
+}
+
+// Node 24
+Node lightPawnNode6 {
+	geometry  pawn
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (88, 12.5001, 55)
+}
+
+// Node 25
+Node lightPawnNode7 {
+	geometry  pawn
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (80, 12.5001, 55)
+}
+
+// Node 26
+Node lightPawnNode8 {
+	geometry  pawn
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (72, 12.5001, 55)
+}
+
+//light rooks
+// Node 27
+Node lightRook1 {
+	geometry  rook
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (128, 12.5001, 47)
+}
+
+// Node 28
+Node lightRook2 {
+	geometry  rook
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (72, 12.5001, 47)
+}
+
+//light bishops
+
+// Node 29
+Node lightBishop1 {
+	geometry  bishop
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (112, 12.5001, 47)
+	
+}
+
+// Node 30
+Node lightBishop2 {
+	geometry  bishop
+	shader    lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (88, 12.5001, 47)
+}
+
+//light queen
+
+// Node 31
+Node lightQueen {
+	geometry queen
+	shader lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (104, 12.5001, 47)
+}
+
+//light king
+// Node 32
+Node lightKing {
+	geometry king
+	shader lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (96, 12.5001, 47)
+}
+
+//light knight
+// Node 33
+Node lightKnight1 {
+	geometry knight
+	shader lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (120, 12.5001, 47)
+	rotate (90, 0, 0)
+}
+
+// Node 34
+Node lightKnight2 {
+	geometry knight
+	shader lightFigure
+	scale (5.2, 5.2, 5.2)
+	translate (80, 12.5001, 47)
+	rotate (90, 0, 0)
+}
+
+Phong white_flat {
+	color (0.7, 0.7, 0.7)
+	specularExponent 200
+}
+
+Refl reflection {
+	multiplier 0.96
+}
+
+
+// 5. The cubemap environment:
+CubemapEnvironment environment {
+	folder "env/forest"
+}
+
+

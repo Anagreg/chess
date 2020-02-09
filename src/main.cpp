@@ -31,6 +31,7 @@
 #endif
 
 #include <math.h>
+#include <iostream>
 #include <string.h>
 #include <vector>
 #include "util.h"
@@ -49,17 +50,32 @@
 #include "cxxptl-sdl.h"
 using namespace std;
 
+#define PLAYER_LIGHT 1
+#define PLAYER_DARK 2
+
 ThreadPool pool;
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
-char sceneFile[256] = "data/forest.fray";
+char sceneFile[256] = "data/chess.fray";
 const double offsets[5][2] = {
-	{ 0, 0 }, 
+	{ 0, 0 },
 	{ 0.6, 0 },
 	{ 0.3, 0.3 },
 	{ 0, 0.6 },
 	{ 0.6, 0.6 },
 };
 
+Vector middlesOfTiles[8][8];
+void fillMiddlesOfTiles()
+{
+    double x = 72, y = 12.5001, z = 47;
+    for (int row = 0; row < 8; ++row)
+    {
+        for (int column = 0; column < 8; ++column)
+        {
+            middlesOfTiles[row][column] = Vector(x + column * 8, y, z + row * 8);
+        }
+    }
+}
 
 bool visible(const Vector& a, const Vector& b)
 {
@@ -68,21 +84,21 @@ bool visible(const Vector& a, const Vector& b)
 	ray.start = a;
 	double maxDist = distance(a, b);
 	ray.dir.normalize();
-	
+
 	for (auto node: scene.nodes) {
 		IntersectionInfo info;
 		if (node->intersect(ray, info) && info.dist < maxDist) {
 			return false;
 		}
 	}
-	
+
 	return true;
 }
 
 void applyBumpMapping(Node& closestNode, IntersectionInfo& info)
 {
 	if (!closestNode.bump) return;
-	
+
 	void* interface = closestNode.bump->getInterface(BumpMapperInterface::ID);
 	if (interface) {
 		static_cast<BumpMapperInterface*>(interface)->modifyNormal(info);
@@ -92,23 +108,23 @@ void applyBumpMapping(Node& closestNode, IntersectionInfo& info)
 Vector hemisphereSample(const IntersectionInfo& info)
 {
 	// we want unit resultRay (direction), such that dot(info.norm, resultRay) >= 0
-	
+
 	Random& rnd = getRandomGen();
-	
+
 	double u = rnd.randdouble();
 	double v = rnd.randdouble();
-	
+
 	double theta = 2 * PI * u;
 	double phi = acos(2 * v - 1);
-	
+
 	Vector dir(
 		sin(phi) * cos(theta),
 		cos(phi),
 		sin(phi) * sin(theta)
 	);
-	
+
 	// v is uniform in the unit sphere
-	
+
 	if (dot(dir, info.norm) > 0)
 		return dir;
 	else
@@ -171,14 +187,14 @@ Color explicitLightSample(const Ray& ray, const IntersectionInfo& info, const Co
 Color pathtrace(const Ray& ray, Color pathMultiplier, Random& rnd)
 {
 	if (ray.depth > scene.settings.maxTraceDepth ||
-		pathMultiplier.intensity() < 0.01 
+		pathMultiplier.intensity() < 0.01
 		)
 		return Color(0, 0, 0);
-	
+
 	Node* closestNode = nullptr;
 	IntersectionInfo closestIntersection;
 	closestIntersection.dist = 1e99;
-	
+
 	for (auto node: scene.nodes) {
 		IntersectionInfo info;
 		if (node->intersect(ray, info) && info.dist < closestIntersection.dist) {
@@ -186,7 +202,7 @@ Color pathtrace(const Ray& ray, Color pathMultiplier, Random& rnd)
 			closestNode = node;
 		}
 	}
-	
+
 	bool hitLight = false;
 	Light* intersectedLight = nullptr;
 	for (auto light: scene.lights) {
@@ -197,7 +213,7 @@ Color pathtrace(const Ray& ray, Color pathMultiplier, Random& rnd)
 			intersectedLight = light;
 		}
 	}
-	
+
 	if (hitLight) {
 		if (ray.flags & RF_DIFFUSE) {
 			// forbid light contributions after a diffuse reflection
@@ -206,23 +222,23 @@ Color pathtrace(const Ray& ray, Color pathMultiplier, Random& rnd)
 			return intersectedLight->getColor() * pathMultiplier;
 		}
 	}
-	
+
 	if (!closestNode) {
 		if (scene.environment)
 			return scene.environment->getEnvironment(ray.dir) * pathMultiplier;
 		else
 			return Color(0, 0, 0);
 	}
-		
+
 	applyBumpMapping(*closestNode, closestIntersection);
-	
+
 	Ray newRay = ray;
 	newRay.depth++;
 	newRay.start = closestIntersection.ip + closestIntersection.norm * 1e-6;
 	Color brdfColor;
 	float rayPdf;
 	closestNode->shader->spawnRay(closestIntersection, ray, newRay, brdfColor, rayPdf);
-	
+
 	// ("sampling the light"):
 	// try to end the current path with explicit sampling of some light
 	Color contribLight = explicitLightSample(ray, closestIntersection, pathMultiplier,
@@ -246,11 +262,11 @@ Color pathtrace(const Ray& ray, Color pathMultiplier, Random& rnd)
 Color raytrace(const Ray& ray)
 {
 	if (ray.depth > scene.settings.maxTraceDepth) return Color(0, 0, 0);
-	
+
 	Node* closestNode = nullptr;
 	IntersectionInfo closestIntersection;
 	closestIntersection.dist = 1e99;
-	
+
 	for (auto node: scene.nodes) {
 		IntersectionInfo info;
 		if (node->intersect(ray, info) && info.dist < closestIntersection.dist) {
@@ -258,7 +274,7 @@ Color raytrace(const Ray& ray)
 			closestNode = node;
 		}
 	}
-	
+
 	bool hitLight = false;
 	Light* intersectedLight = nullptr;
 	for (auto light: scene.lights) {
@@ -269,18 +285,18 @@ Color raytrace(const Ray& ray)
 			intersectedLight = light;
 		}
 	}
-	
+
 	if (hitLight) {
 		return intersectedLight->getColor();
 	}
-	
+
 	if (!closestNode) {
 		if (scene.environment) return scene.environment->getEnvironment(ray.dir);
 		else return Color(0, 0, 0);
 	}
-		
+
 	applyBumpMapping(*closestNode, closestIntersection);
-	
+
 	return closestNode->shader->shade(ray, closestIntersection);
 }
 
@@ -326,7 +342,7 @@ class RendMT: public Parallel {
 	int samplesPerPixel;
 	Mutex mtx;
 public:
-	RendMT(const vector<Rect>& buckets, int samplesPerPixel): 
+	RendMT(const vector<Rect>& buckets, int samplesPerPixel):
 		cursor(0), buckets(buckets), samplesPerPixel(samplesPerPixel) {}
 	void entry(int threadIdx, int threadCount) override
 	{
@@ -387,11 +403,11 @@ void render()
 					return;
 			}
 		}
-				
+
 	}
-	
+
 	vector<Rect> buckets = getBucketsList();
-	
+
 	int samplesPerPixel = COUNT_OF(offsets);
 	if (!scene.settings.wantAA) samplesPerPixel = 1;
 	if (scene.camera->dof)
@@ -400,7 +416,7 @@ void render()
 		samplesPerPixel = max(samplesPerPixel, scene.settings.numPaths);
 
 	RendMT worker(buckets, samplesPerPixel);
-	
+
 	pool.run(&worker, scene.settings.numThreads);
 }
 
@@ -434,6 +450,59 @@ void debugRayTrace(int x, int y)
 		raytrace(ray);
 }
 
+int traceToNode(const Ray& ray, int player) //returns the index of the Node (figures and game board only) that we hit
+{
+	if (ray.depth > scene.settings.maxTraceDepth) return -1; //nothing
+
+	Node* closestNode = nullptr;
+	int closestNodeIndx = -1;
+	IntersectionInfo closestIntersection;
+	closestIntersection.dist = 1e99;
+	size_t from, to;
+    if (player == PLAYER_LIGHT)
+    {
+        from = 19;
+        to = 34;
+    }
+    else if (player == PLAYER_DARK)
+    {
+        from = 3;
+        to = 18;
+    }
+	for (int indx = from; indx <= to; ++indx)
+    {
+        Node* node = scene.nodes[indx];
+		IntersectionInfo info;
+		if (node->intersect(ray, info) && info.dist < closestIntersection.dist)
+        {
+			closestIntersection = info;
+			closestNode = node;
+			closestNodeIndx = indx;
+		}
+	}
+
+	if (!closestNode)
+    {
+		return -1; //nothing hit
+	}
+
+	return closestNodeIndx;
+}
+
+int traceToTile (const Ray& ray)
+{
+    if (ray.depth > scene.settings.maxTraceDepth) return -1; //nothing
+    Node* node = scene.nodes[2]; //checker
+    IntersectionInfo info;
+    if (!(node->intersect(ray, info)))
+    {
+        return -1;
+    }
+    int offsetX = floor((info.ip.x - 70) / 8);
+    int offsetZ = floor((info.ip.z - 40) / 8);
+    return offsetZ * 8 + offsetX;
+}
+
 void mainloop(void)
 {
 	SDL_ShowCursor(0);
@@ -442,52 +511,92 @@ void mainloop(void)
 	const double MOVEMENT_PER_SEC = 20;
 	const double ROTATION_PER_SEC = 50;
 	const double SENSITIVITY = 0.1;
+	int countClicks = 0, turn = 0;
+	Node* figureToMove = nullptr;
+	fillMiddlesOfTiles();
+	bool sceneChanged = true;
 
-	while (running) {
+	while (running)
+    {
 		Uint32 ticksSaved = SDL_GetTicks();
-		render();
-		displayVFB(vfb);
+		if (sceneChanged)
+        {
+            printf("Render()\n");
+            render();
+            displayVFB(vfb);
+            sceneChanged = false;
+        }
 		// timeDelta is how much time the frame took to render:
 		double timeDelta = (SDL_GetTicks() - ticksSaved) / 1000.0;
 		//
-		SDL_Event ev;
+		SDL_Event event;
 
-		while (SDL_PollEvent(&ev)) {
-			switch (ev.type) {
+		while (SDL_PollEvent(&event))
+        {
+			switch (event.type)
+			{
 				case SDL_QUIT:
-					running = false;
-					break;
+                {
+                    running = false;
+                    break;
+                }
 				case SDL_KEYDOWN:
 				{
-					switch (ev.key.keysym.sym) {
+					switch (event.key.keysym.sym)
+					{
 						case SDLK_ESCAPE:
-							running = false;
+                        {
+                            running = false;
 							break;
-						default:
-							break;
+                        }
+						default: break;
 					}
 					break;
 				}
+                case SDL_MOUSEBUTTONUP:
+                {
+                    int mouseX, mouseY;
+                    SDL_GetMouseState(&mouseX, &mouseY);
+                    printf("Mouse button clicked at position (x, y) = (%d, %d)\n", mouseX, mouseY);
+                    Ray newRay = scene.camera->getScreenRay(mouseX, mouseY);
+                    int indx;
+                    if (!(countClicks & 1))
+                    {
+                        int player = (turn & 1) ? PLAYER_DARK : PLAYER_LIGHT;
+                        indx = traceToNode(newRay, player);
+                        if (indx != -1)
+                        {
+                            printf("Found node: %d\n", indx);
+                            figureToMove = scene.nodes[indx];
+                            ++countClicks;
+                        }
+                    }
+                    else
+                    {
+                        indx = traceToTile(newRay);
+                        if (indx != -1)
+                        {
+                            printf("Found tile: %d\n", indx);
+                            int row = indx / 8;
+                            int column = indx % 8;
+                            printf("Row and column of board: %d %d => ", row, column);
+                            std::cout << middlesOfTiles[row][column].x << " " << middlesOfTiles[row][column].y << " " << middlesOfTiles[row][column].z << std::endl;
+                            Vector midAt = middlesOfTiles[row][column];
+                            figureToMove->T.translate(-figureToMove->T.offset);
+                            figureToMove->T.translate(midAt);
+                            std::cout << figureToMove->T.offset.x << " " << figureToMove->T.offset.y << " " << figureToMove->T.offset.z << std::endl;
+                            sceneChanged = true;
+                            //move to new tile
+                            turn++;
+                        }
+                        countClicks = 0;
+                        figureToMove = nullptr;
+                    }
+                    break;
+                }
 			}
 		}
-
-		Uint8* keystate = SDL_GetKeyState(NULL);
-		double movement = MOVEMENT_PER_SEC * timeDelta;
-		double rotation = ROTATION_PER_SEC * timeDelta;
-		if (keystate[SDLK_UP]) cam.move(0, +movement);
-		if (keystate[SDLK_DOWN]) cam.move(0, -movement);
-		if (keystate[SDLK_LEFT]) cam.move(-movement, 0);
-		if (keystate[SDLK_RIGHT]) cam.move(+movement, 0);
-
-		if (keystate[SDLK_KP8]) cam.rotate(0, +rotation);
-		if (keystate[SDLK_KP2]) cam.rotate(0, -rotation);
-		if (keystate[SDLK_KP4]) cam.rotate(+rotation, 0);
-		if (keystate[SDLK_KP6]) cam.rotate(-rotation, 0);
-
-		int deltax, deltay;
-		SDL_GetRelativeMouseState(&deltax, &deltay);
-		cam.rotate(-SENSITIVITY * deltax, -SENSITIVITY*deltay);
-	}
+    }
 }
 
 
@@ -505,12 +614,12 @@ int main(int argc, char** argv)
 		return -3;
 	}
 
-	initGraphics(scene.settings.frameWidth, scene.settings.frameHeight, 
+	initGraphics(scene.settings.frameWidth, scene.settings.frameHeight,
 				scene.settings.fullscreen);
-	
+
 	if (scene.settings.numThreads == 0)
 		scene.settings.numThreads = get_processor_count();
-	
+
 	scene.beginRender();
 	if (!scene.settings.interactive) {
 		setWindowCaption("fray: rendering...");
